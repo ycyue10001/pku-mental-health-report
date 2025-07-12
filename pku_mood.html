@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>压力与韧性：北大精英学子心理健康探索</title>
+    <!-- Chosen Palette: Scholarly Calm -->
+    <!-- Application Structure Plan: A single-page, thematic dashboard design with five main sections: 1. Pressure Landscape. 2. Connection Web. 3. Resilience Shield. 4. ✨ AI Insights & Strategies (New). 5. About the Study. This structure guides the user from problem, to relationships, to solutions, to personalized AI-driven advice, and finally to context, creating a comprehensive and helpful user journey. -->
+    <!-- Visualization & Content Choices: 1. Pressure Landscape: Bar Chart (Chart.js). 2. Mental Health Connection: Correlation Heatmap (HTML/JS). 3. Resilience Shield: Interactive Scatter Plot (Chart.js). 4. AI Insights: A new interactive module with a dropdown and a button to call the Gemini API, generating personalized coping strategies based on user input. This adds a dynamic, practical, and high-value feature. Goal: Provide personalized support. 5. About the Study: Stat cards (HTML/CSS). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #F8F7F4; /* Warm Neutral Background */
+            color: #3D405B; /* Dark Slate Blue for Text */
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 40vh;
+            max-height: 400px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .stat-card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+        }
+        .nav-link:hover {
+            color: #E07A5F; /* Terracotta Accent */
+        }
+        .active-nav {
+            color: #E07A5F;
+            border-bottom: 2px solid #E07A5F;
+        }
+        .lang-btn {
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .active-lang {
+            background-color: #3D405B;
+            color: #F8F7F4;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .gemini-btn {
+            background: linear-gradient(45deg, #4285F4, #9B72CB, #D96570, #F2A60F);
+            background-size: 400% 400%;
+            animation: gradient 10s ease infinite;
+            color: white;
+            font-weight: bold;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            transition: transform 0.2s;
+        }
+        .gemini-btn:hover {
+             transform: scale(1.05);
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3D405B;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #gemini-output ol {
+            list-style-type: decimal;
+            list-style-position: inside;
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            space-y: 0.5rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-lg md:text-xl font-bold" data-lang-key="header_title">压力与韧性</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#landscape" class="nav-link text-gray-600" data-lang-key="nav_landscape">压力图景</a>
+                <a href="#connections" class="nav-link text-gray-600" data-lang-key="nav_connections">关系网络</a>
+                <a href="#resilience" class="nav-link text-gray-600" data-lang-key="nav_resilience">韧性之盾</a>
+                <a href="#gemini-insights" class="nav-link text-gray-600" data-lang-key="nav_gemini">AI 建议</a>
+                <a href="#about" class="nav-link text-gray-600" data-lang-key="nav_about">关于研究</a>
+            </div>
+            <div class="flex items-center">
+                <div class="bg-gray-200 p-1 rounded-full flex text-sm">
+                    <button id="lang-cn" class="lang-btn px-3 py-1 rounded-full active-lang">中</button>
+                    <button id="lang-en" class="lang-btn px-3 py-1 rounded-full">EN</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 md:py-16">
+
+        <section class="text-center mb-16 md:mb-24">
+            <h2 class="text-3xl md:text-5xl font-bold mb-4" data-lang-key="main_title">压力与韧性</h2>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto" data-lang-key="main_subtitle">一项关于北京大学精英学子在现代压力下的心理健康探索</p>
+        </section>
+
+        <section id="landscape" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h3 class="text-2xl md:text-3xl font-bold" data-lang-key="landscape_title">压力图景：哪种压力感受最强烈？</h3>
+                <p class="mt-4 text-gray-600 max-w-2xl mx-auto" data-lang-key="landscape_desc">本研究将同辈压力解构为三个核心维度。数据显示，“学业内卷”是学生感受最强烈的压力源，其平均分显著高于社交压力和数字压力。</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="pressureChart"></canvas>
+            </div>
+        </section>
+
+        <section id="connections" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h3 class="text-2xl md:text-3xl font-bold" data-lang-key="connections_title">关系网络：压力、健康与资源的相互作用</h3>
+                <p class="mt-4 text-gray-600 max-w-2xl mx-auto" data-lang-key="connections_desc">下方的交互式热力图展示了所有核心变量间的相关性。将鼠标悬停于方格上可查看具体关系。红色表示正相关（同增同减），蓝色表示负相关（一增一减）。颜色越深，关系越强。</p>
+            </div>
+            <div class="max-w-4xl mx-auto bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                <div id="correlationHeatmap" class="grid grid-cols-8 gap-1 text-xs sm:text-sm"></div>
+            </div>
+             <div id="tooltip" class="tooltip"></div>
+        </section>
+
+        <section id="resilience" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h3 class="text-2xl md:text-3xl font-bold" data-lang-key="resilience_title">韧性之盾：社会支持如何缓冲压力？</h3>
+                <p class="mt-4 text-gray-600 max-w-3xl mx-auto" data-lang-key="resilience_desc">保护性因素能削弱压力带来的伤害吗？这个交互式图表展示了社会支持的“缓冲效应”。点击下方按钮，观察在高、低社会支持组中，学业内卷压力与抑郁症状之间的关系有何不同。</p>
+            </div>
+            <div class="flex justify-center mb-6 space-x-2">
+                <button id="show-high-support" class="filter-btn px-4 py-2 rounded-full bg-[#81B29A] text-white" data-lang-key="filter_high">高社会支持组</button>
+                <button id="show-low-support" class="filter-btn px-4 py-2 rounded-full bg-gray-300" data-lang-key="filter_low">低社会支持组</button>
+                 <button id="show-all" class="filter-btn px-4 py-2 rounded-full bg-gray-300" data-lang-key="filter_all">显示全部</button>
+            </div>
+             <div id="resilience-text" class="text-center text-gray-600 mb-6 min-h-[4rem] px-4"></div>
+            <div class="chart-container">
+                <canvas id="resilienceChart"></canvas>
+            </div>
+        </section>
+        
+        <section id="gemini-insights" class="mb-16 md:mb-24 text-center">
+            <div class="mb-12">
+                <h3 class="text-2xl md:text-3xl font-bold" data-lang-key="gemini_title">AI 智能分析与建议 ✨</h3>
+                <p class="mt-4 text-gray-600 max-w-2xl mx-auto" data-lang-key="gemini_desc">数据告诉我们压力的普遍性，但每个人的应对方式都是独特的。选择您当前面临的主要压力源，让 AI 为您生成个性化的应对策略，帮助您找到前行的力量。</p>
+            </div>
+            <div class="max-w-lg mx-auto">
+                <div class="mb-4">
+                    <label for="stressor-select" class="sr-only" data-lang-key="gemini_select_label">选择压力源</label>
+                    <select id="stressor-select" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A]">
+                        <option value="academic" data-lang-key="stressor_academic">学业内卷压力</option>
+                        <option value="social" data-lang-key="stressor_social">社交同辈压力</option>
+                        <option value="digital" data-lang-key="stressor_digital">社交媒体与数字压力</option>
+                    </select>
+                </div>
+                <button id="get-gemini-suggestions" class="gemini-btn">
+                    <span data-lang-key="gemini_button">生成应对策略</span>
+                </button>
+            </div>
+            <div id="gemini-results-container" class="mt-8 max-w-3xl mx-auto">
+                 <div id="gemini-loader" class="hidden loader"></div>
+                 <div id="gemini-output" class="text-left bg-white p-6 rounded-xl shadow-lg" style="line-height: 1.75;"></div>
+                 <p id="gemini-disclaimer" class="text-xs text-gray-400 mt-4"></p>
+            </div>
+        </section>
+
+        <section id="about">
+            <div class="text-center mb-12">
+                <h3 class="text-2xl md:text-3xl font-bold" data-lang-key="about_title">关于这项探索性研究</h3>
+                <p class="mt-4 text-gray-600 max-w-2xl mx-auto" data-lang-key="about_desc">本分析基于对62名北京大学学生进行的问卷调查。研究虽为初步探索，但揭示了当代大学生在压力与韧性之间寻求平衡的真实图景。</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-[#E07A5F]">62</div>
+                    <div class="text-gray-500 mt-2" data-lang-key="stat_participants">有效参与者</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-[#E07A5F]">20.9</div>
+                    <div class="text-gray-500 mt-2" data-lang-key="stat_age">平均年龄</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-[#E07A5F]">63%</div>
+                    <div class="text-gray-500 mt-2" data-lang-key="stat_gender">女性参与者</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-4xl font-bold text-[#E07A5F]">79%</div>
+                    <div class="text-gray-500 mt-2" data-lang-key="stat_undergrad">本科生</div>
+                </div>
+            </div>
+            <div class="mt-12 text-center text-sm text-gray-500">
+                <p data-lang-key="about_footer">该应用旨在以可视化的方式呈现学术研究成果，所有数据均来自原始报告，并经过匿名化处理。</p>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="text-center py-6 text-sm text-gray-400">
+        <p>&copy; 2025 北大医学人文学院学生研究项目成果展示</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const langData = {
+                cn: {
+                    header_title: "压力与韧性",
+                    nav_landscape: "压力图景",
+                    nav_connections: "关系网络",
+                    nav_resilience: "韧性之盾",
+                    nav_gemini: "AI 建议",
+                    nav_about: "关于研究",
+                    main_title: "压力与韧性",
+                    main_subtitle: "一项关于北京大学精英学子在现代压力下的心理健康探索",
+                    landscape_title: "压力图景：哪种压力感受最强烈？",
+                    landscape_desc: "本研究将同辈压力解构为三个核心维度。数据显示，“学业内卷”是学生感受最强烈的压力源，其平均分显著高于社交压力和数字压力。",
+                    connections_title: "关系网络：压力、健康与资源的相互作用",
+                    connections_desc: "下方的交互式热力图展示了所有核心变量间的相关性。将鼠标悬停于方格上可查看具体关系。红色表示正相关（同增同减），蓝色表示负相关（一增一减）。颜色越深，关系越强。",
+                    resilience_title: "韧性之盾：社会支持如何缓冲压力？",
+                    resilience_desc: "保护性因素能削弱压力带来的伤害吗？这个交互式图表展示了社会支持的“缓冲效应”。点击下方按钮，观察在高、低社会支持组中，学业内卷压力与抑郁症状之间的关系有何不同。",
+                    filter_high: "高社会支持组",
+                    filter_low: "低社会支持组",
+                    filter_all: "显示全部",
+                    resilience_text_high: "在高社会支持组中，学业内卷压力对抑郁症状的影响减弱。支持网络像一个“安全网”，帮助学生抵御竞争带来的负面情绪。",
+                    resilience_text_low: "在低社会支持组中，学业内卷压力与抑郁症状之间的关联更强。缺乏支持使得学生在面对竞争时更加脆弱。",
+                    resilience_text_all: "综合来看，学业内卷压力与抑郁呈正相关。但这种关系受到社会支持水平的调节。",
+                    gemini_title: "AI 智能分析与建议 ✨",
+                    gemini_desc: "数据告诉我们压力的普遍性，但每个人的应对方式都是独特的。选择您当前面临的主要压力源，让 AI 为您生成个性化的应对策略，帮助您找到前行的力量。",
+                    gemini_select_label: "选择压力源",
+                    stressor_academic: "学业内卷压力",
+                    stressor_social: "社交同辈压力",
+                    stressor_digital: "社交媒体与数字压力",
+                    gemini_button: "生成应对策略",
+                    gemini_disclaimer: "免责声明：AI生成的建议仅供参考，不能替代专业的心理咨询或医疗建议。如遇严重困扰，请及时寻求专业帮助。",
+                    about_title: "关于这项探索性研究",
+                    about_desc: "本分析基于对62名北京大学学生进行的问卷调查。研究虽为初步探索，但揭示了当代大学生在压力与韧性之间寻求平衡的真实图景。",
+                    stat_participants: "有效参与者",
+                    stat_age: "平均年龄",
+                    stat_gender: "女性参与者",
+                    stat_undergrad: "本科生",
+                    about_footer: "该应用旨在以可视化的方式呈现学术研究成果，所有数据均来自原始报告，并经过匿名化处理。"
+                },
+                en: {
+                    header_title: "Pressure & Resilience",
+                    nav_landscape: "Pressure Landscape",
+                    nav_connections: "Connection Web",
+                    nav_resilience: "Resilience Shield",
+                    nav_gemini: "AI Advice",
+                    nav_about: "About the Study",
+                    main_title: "Pressure & Resilience",
+                    main_subtitle: "An Exploration of Mental Health Among Elite Students at Peking University Under Modern Pressures",
+                    landscape_title: "The Pressure Landscape: Which Pressure is Felt Most Intensely?",
+                    landscape_desc: "This study deconstructs peer pressure into three core dimensions. The data show that 'Academic Involution' is the most intensely felt stressor, with its average score significantly higher than social and digital pressure.",
+                    connections_title: "The Connection Web: Interactions of Pressure, Health, and Resources",
+                    connections_desc: "The interactive heatmap below displays the correlations among all core variables. Hover over a square to see the specific relationship. Red indicates a positive correlation, while blue indicates a negative one. The deeper the color, the stronger the relationship.",
+                    resilience_title: "The Resilience Shield: How Does Social Support Buffer Stress?",
+                    resilience_desc: "Can protective factors weaken the harm caused by stress? This interactive chart demonstrates the 'buffering effect' of social support. Click the buttons below to observe how the relationship between academic involution and depressive symptoms differs between high and low social support groups.",
+                    filter_high: "High Social Support",
+                    filter_low: "Low Social Support",
+                    filter_all: "Show All",
+                    resilience_text_high: "In the high social support group, the impact of academic involution on depressive symptoms is weakened. A support network acts like a 'safety net,' helping students withstand the negative emotions from competition.",
+                    resilience_text_low: "In the low social support group, the link between academic involution and depressive symptoms is stronger. A lack of support makes students more vulnerable when facing competition.",
+                    resilience_text_all: "Overall, academic involution is positively correlated with depression. However, this relationship is moderated by the level of social support.",
+                    gemini_title: "AI Insights & Strategies ✨",
+                    gemini_desc: "Data shows us the prevalence of stress, but how each person copes is unique. Select your primary stressor below, and let AI generate personalized coping strategies to help you find a path forward.",
+                    gemini_select_label: "Select your stressor",
+                    stressor_academic: "Academic Involution Pressure",
+                    stressor_social: "Social Peer Pressure",
+                    stressor_digital: "Social Media & Digital Stress",
+                    gemini_button: "Generate Coping Strategies",
+                    gemini_disclaimer: "Disclaimer: AI-generated suggestions are for informational purposes only and are not a substitute for professional psychological counseling or medical advice. If you are in severe distress, please seek professional help.",
+                    about_title: "About This Exploratory Study",
+                    about_desc: "This analysis is based on a survey of 62 students from Peking University. Although preliminary, the study reveals a vivid picture of contemporary university students balancing pressure and resilience.",
+                    stat_participants: "Valid Participants",
+                    stat_age: "Average Age",
+                    stat_gender: "Female Participants",
+                    stat_undergrad: "Undergraduates",
+                    about_footer: "This application aims to present academic research findings in a visual format. All data is sourced from the original report and has been anonymized."
+                }
+            };
+            
+            let currentLang = 'cn';
+
+            const updateContent = (lang) => {
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.getAttribute('data-lang-key');
+                    if (langData[lang][key]) {
+                        el.innerHTML = langData[lang][key];
+                    }
+                });
+                document.documentElement.lang = lang === 'cn' ? 'zh-CN' : 'en';
+                updateCharts(lang);
+                updateHeatmap(lang);
+                
+                let activeFilterId = 'show-high-support'; 
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if (!btn.classList.contains('bg-gray-300')) {
+                        activeFilterId = btn.id;
+                    }
+                });
+                updateResilienceText(activeFilterId);
+
+                const disclaimerEl = document.getElementById('gemini-disclaimer');
+                if (disclaimerEl.textContent) {
+                    disclaimerEl.textContent = langData[lang].gemini_disclaimer;
+                }
+            };
+
+            document.getElementById('lang-cn').addEventListener('click', () => {
+                currentLang = 'cn';
+                document.getElementById('lang-cn').classList.add('active-lang');
+                document.getElementById('lang-en').classList.remove('active-lang');
+                updateContent(currentLang);
+            });
+
+            document.getElementById('lang-en').addEventListener('click', () => {
+                currentLang = 'en';
+                document.getElementById('lang-en').classList.add('active-lang');
+                document.getElementById('lang-cn').classList.remove('active-lang');
+                updateContent(currentLang);
+            });
+            
+            const studyData = {
+                pressureMeans: {
+                    academic: 16.51,
+                    social: 14.41,
+                    digital: 14.49
+                },
+                correlations: {
+                    labels: {
+                        cn: ["学业内卷", "社交压力", "数字压力", "抑郁", "焦虑", "压力", "社会支持", "自尊"],
+                        en: ["Acad. Invol.", "Social Pres.", "Digital Stress", "Depression", "Anxiety", "Stress", "Soc. Support", "Self-Esteem"]
+                    },
+                    matrix: [
+                        [1.00, 0.51, 0.55, 0.58, 0.35, 0.50, -0.23, -0.39],
+                        [0.51, 1.00, 0.64, 0.57, 0.40, 0.52, -0.39, -0.58],
+                        [0.55, 0.64, 1.00, 0.66, 0.51, 0.67, -0.32, -0.53],
+                        [0.58, 0.57, 0.66, 1.00, 0.76, 0.84, -0.60, -0.77],
+                        [0.35, 0.40, 0.51, 0.76, 1.00, 0.76, -0.47, -0.56],
+                        [0.50, 0.52, 0.67, 0.84, 0.76, 1.00, -0.52, -0.69],
+                        [-0.23, -0.39, -0.32, -0.60, -0.47, -0.52, 1.00, 0.67],
+                        [-0.39, -0.58, -0.53, -0.77, -0.56, -0.69, 0.67, 1.00]
+                    ]
+                },
+                resilienceData: [
+                    { academic: 5, depression: 0, support: 67 }, { academic: 5, depression: 0, support: 64 },
+                    { academic: 5, depression: 2, support: 72 }, { academic: 6, depression: 1, support: 84 },
+                    { academic: 7, depression: 12, support: 45 }, { academic: 8, depression: 16, support: 43 },
+                    { academic: 9, depression: 0, support: 67 }, { academic: 9, depression: 1, support: 84 },
+                    { academic: 9, depression: 3, support: 64 }, { academic: 9, depression: 11, support: 59 },
+                    { academic: 10, depression: 1, support: 77 }, { academic: 10, depression: 8, support: 50 },
+                    { academic: 10, depression: 12, support: 34 }, { academic: 11, depression: 2, support: 76 },
+                    { academic: 11, depression: 3, support: 70 }, { academic: 12, depression: 5, support: 62 },
+                    { academic: 12, depression: 16, support: 46 }, { academic: 13, depression: 0, support: 80 },
+                    { academic: 13, depression: 21, support: 26 }, { academic: 14, depression: 10, support: 53 },
+                    { academic: 15, depression: 5, support: 63 }, { academic: 15, depression: 12, support: 32 },
+                    { academic: 16, depression: 8, support: 70 }, { academic: 16, depression: 9, support: 56 },
+                    { academic: 16, depression: 14, support: 48 }, { academic: 17, depression: 0, support: 75 },
+                    { academic: 17, depression: 1, support: 84 }, { academic: 17, depression: 4, support: 77 },
+                    { academic: 17, depression: 8, support: 69 }, { academic: 18, depression: 7, support: 64 },
+                    { academic: 18, depression: 10, support: 71 }, { academic: 18, depression: 11, support: 47 },
+                    { academic: 18, depression: 12, support: 53 }, { academic: 18, depression: 16, support: 58 },
+                    { academic: 18, depression: 18, support: 48 }, { academic: 19, depression: 10, support: 61 },
+                    { academic: 19, depression: 13, support: 49 }, { academic: 19, depression: 17, support: 45 },
+                    { academic: 19, depression: 18, support: 44 }, { academic: 20, depression: 0, support: 78 },
+                    { academic: 20, depression: 1, support: 84 }, { academic: 20, depression: 9, support: 76 },
+                    { academic: 20, depression: 14, support: 47 }, { academic: 20, depression: 16, support: 55 },
+                    { academic: 20, depression: 19, support: 42 }, { academic: 21, depression: 17, support: 49 },
+                    { academic: 22, depression: 6, support: 64 }, { academic: 22, depression: 14, support: 53 },
+                    { academic: 22, depression: 19, support: 34 }, { academic: 22, depression: 20, support: 29 },
+                    { academic: 23, depression: 21, support: 30 }, { academic: 24, depression: 17, support: 53 },
+                    { academic: 25, depression: 7, support: 68 }, { academic: 25, depression: 13, support: 77 },
+                    { academic: 25, depression: 15, support: 48 }, { academic: 25, depression: 19, support: 41 },
+                    { academic: 25, depression: 20, support: 35 }
+                ]
+            };
+            
+            let pressureChartInstance, resilienceChartInstance;
+
+            function createPressureChart(lang) {
+                const ctx = document.getElementById('pressureChart').getContext('2d');
+                if (pressureChartInstance) {
+                    pressureChartInstance.destroy();
+                }
+                pressureChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: lang === 'cn' ? ['学业内卷', '社交压力', '数字压力'] : ['Academic Involution', 'Social Pressure', 'Digital Stress'],
+                        datasets: [{
+                            label: lang === 'cn' ? '平均压力分数' : 'Average Pressure Score',
+                            data: [studyData.pressureMeans.academic, studyData.pressureMeans.social, studyData.pressureMeans.digital],
+                            backgroundColor: ['#F94144', '#F9C74F', '#43AA8B'],
+                            borderRadius: 5,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: 20, title: { display: true, text: lang === 'cn' ? '平均分 (5-25分)' : 'Average Score (5-25)' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) { label += context.parsed.y.toFixed(2); }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function createResilienceChart(lang, filter) {
+                const ctx = document.getElementById('resilienceChart').getContext('2d');
+                if (resilienceChartInstance) {
+                    resilienceChartInstance.destroy();
+                }
+
+                const supportMedian = 64;
+                let datasets = [];
+
+                if (filter === 'all') {
+                    datasets.push({
+                        label: langData[lang].filter_all,
+                        data: studyData.resilienceData.map(d => ({ x: d.academic, y: d.depression })),
+                        backgroundColor: 'rgba(61, 64, 91, 0.6)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    });
+                } else {
+                     datasets.push({
+                        label: langData[lang].filter_high,
+                        data: studyData.resilienceData.filter(d => d.support >= supportMedian).map(d => ({ x: d.academic, y: d.depression })),
+                        backgroundColor: 'rgba(129, 178, 154, 0.8)', // #81B29A
+                         pointRadius: 5,
+                        pointHoverRadius: 7,
+                     });
+                     datasets.push({
+                        label: langData[lang].filter_low,
+                        data: studyData.resilienceData.filter(d => d.support < supportMedian).map(d => ({ x: d.academic, y: d.depression })),
+                        backgroundColor: 'rgba(249, 199, 79, 0.8)', // #F9C74F
+                         pointRadius: 5,
+                        pointHoverRadius: 7,
+                     });
+                     if (filter === 'low') { datasets.reverse(); }
+                }
+
+                resilienceChartInstance = new Chart(ctx, {
+                    type: 'scatter',
+                    data: { datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: { display: true, text: lang === 'cn' ? '学业内卷压力分数' : 'Academic Involution Score' },
+                                min: 4, max: 26
+                            },
+                            y: {
+                                title: { display: true, text: lang === 'cn' ? '抑郁症状分数' : 'Depression Symptom Score' },
+                                min: -1, max: 22
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: filter !== 'all',
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `(${context.raw.x}, ${context.raw.y})`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function updateCharts(lang) {
+                if (document.getElementById('pressureChart')) createPressureChart(lang);
+                if (document.getElementById('resilienceChart')) createResilienceChart(lang, 'high');
+            }
+            
+            function updateResilienceText(filterId) {
+                const resilienceTextEl = document.getElementById('resilience-text');
+                let key;
+                if (filterId === 'show-high-support') {
+                    key = 'resilience_text_high';
+                } else if (filterId === 'show-low-support') {
+                    key = 'resilience_text_low';
+                } else {
+                    key = 'resilience_text_all';
+                }
+                resilienceTextEl.textContent = langData[currentLang][key];
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const clickedButton = e.currentTarget;
+
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('text-white', 'bg-[#81B29A]', 'bg-[#F9C74F]', 'bg-[#3D405B]');
+                        btn.classList.add('bg-gray-300');
+                    });
+
+                    clickedButton.classList.remove('bg-gray-300');
+                    clickedButton.classList.add('text-white');
+
+                    let filterType;
+                    if (clickedButton.id === 'show-high-support') {
+                        clickedButton.classList.add('bg-[#81B29A]');
+                        filterType = 'high';
+                    } else if (clickedButton.id === 'show-low-support') {
+                        clickedButton.classList.add('bg-[#F9C74F]');
+                        filterType = 'low';
+                    } else { 
+                        clickedButton.classList.add('bg-[#3D405B]');
+                        filterType = 'all';
+                    }
+
+                    createResilienceChart(currentLang, filterType);
+                    updateResilienceText(clickedButton.id);
+                });
+            });
+
+            const heatmapEl = document.getElementById('correlationHeatmap');
+            const tooltipEl = document.getElementById('tooltip');
+
+            function updateHeatmap(lang) {
+                heatmapEl.innerHTML = '';
+                const labels = studyData.correlations.labels[lang];
+                heatmapEl.style.gridTemplateColumns = `minmax(0, 1.5fr) repeat(${labels.length}, minmax(0, 1fr))`;
+                
+                heatmapEl.appendChild(document.createElement('div'));
+                labels.forEach(label => {
+                    const headerEl = document.createElement('div');
+                    headerEl.className = 'p-1 sm:p-2 font-bold text-center break-words';
+                    headerEl.textContent = label;
+                    heatmapEl.appendChild(headerEl);
+                });
+
+                studyData.correlations.matrix.forEach((row, i) => {
+                    const rowLabelEl = document.createElement('div');
+                    rowLabelEl.className = 'p-1 sm:p-2 font-bold text-right break-words';
+                    rowLabelEl.textContent = labels[i];
+                    heatmapEl.appendChild(rowLabelEl);
+
+                    row.forEach((value, j) => {
+                        const cell = document.createElement('div');
+                        const opacity = Math.abs(value);
+                        let bgColor;
+                        if (i === j) {
+                            bgColor = 'bg-gray-200';
+                        } else {
+                            bgColor = value > 0 ? `rgba(249, 65, 68, ${opacity})` : `rgba(67, 170, 139, ${opacity})`;
+                        }
+                        
+                        cell.className = 'flex items-center justify-center aspect-square rounded-sm';
+                        cell.style.backgroundColor = bgColor;
+                        cell.dataset.value = value.toFixed(2);
+                        cell.dataset.row = labels[i];
+                        cell.dataset.col = labels[j];
+                        
+                        cell.addEventListener('mousemove', (e) => {
+                            tooltipEl.style.display = 'block';
+                            let relationText = lang === 'cn' ? '与' : 'and';
+                            let corrText = lang === 'cn' ? '相关系数' : 'Correlation';
+                            tooltipEl.innerHTML = `${cell.dataset.row} ${relationText} ${cell.dataset.col}<br>${corrText}: ${cell.dataset.value}`;
+                            tooltipEl.style.left = `${e.pageX + 10}px`;
+                            tooltipEl.style.top = `${e.pageY + 10}px`;
+                        });
+                        cell.addEventListener('mouseleave', () => {
+                            tooltipEl.style.display = 'none';
+                        });
+
+                        heatmapEl.appendChild(cell);
+                    });
+                });
+            }
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section[id]');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active-nav');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active-nav');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            navLinks.forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(this.getAttribute('href'));
+                    if(targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            const geminiBtn = document.getElementById('get-gemini-suggestions');
+            const stressorSelect = document.getElementById('stressor-select');
+            const geminiOutput = document.getElementById('gemini-output');
+            const geminiLoader = document.getElementById('gemini-loader');
+            const geminiDisclaimer = document.getElementById('gemini-disclaimer');
+            
+            function parseSimpleMarkdown(text) {
+                let html = '';
+                const lines = text.split('\n');
+                let inList = false;
+
+                for (const line of lines) {
+                    if (/^\s*$/.test(line)) continue;
+
+                    let processedLine = line
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+                    if (/^\d+\.\s/.test(processedLine)) {
+                        if (!inList) {
+                            html += '<ol>';
+                            inList = true;
+                        }
+                        html += `<li>${processedLine.replace(/^\d+\.\s/, '')}</li>`;
+                    } else {
+                        if (inList) {
+                            html += '</ol>';
+                            inList = false;
+                        }
+                        html += `<p>${processedLine}</p>`;
+                    }
+                }
+
+                if (inList) {
+                    html += '</ol>';
+                }
+
+                return html;
+            }
+
+            const getPrompts = (stressor, lang) => {
+                const prompts = {
+                    academic: {
+                        cn: "你是一位富有同理心的心理健康顾问，专为顶尖大学的学生提供支持。一名北京大学的学生正在为极度的学业压力和“内卷”感而苦恼，向你寻求帮助。请提供三条具体、实用且充满关怀的应对策略。请以数字列表的形式呈现，保持支持和非评判的语气，并以一句共情的话语开头。",
+                        en: "You are a compassionate mental health advisor specializing in student well-being. A student at a top-tier, highly competitive university like Peking University is seeking advice on how to cope with intense academic pressure and the feeling of 'involution'. Provide three practical, empathetic, and actionable coping strategies. Please format the response as a numbered list, maintain a supportive and non-judgmental tone, and start with a sentence of validation for their feelings."
+                    },
+                    social: {
+                        cn: "你是一位富有同理心的心理健康顾问，专为顶尖大学的学生提供支持。一名北京大学的学生因社交压力而感到焦虑和孤独，比如感觉需要融入圈子或担心他人评价。请提供三条具体、实用且充满关怀的应对策略。请以数字列表的形式呈现，保持支持和非评判的语气，并以一句共情的话语开头。",
+                        en: "You are a compassionate mental health advisor specializing in student well-being. A student at Peking University feels anxious and lonely due to social pressure, such as the need to fit in or worrying about others' judgment. Provide three practical, empathetic, and actionable coping strategies. Please format the response as a numbered list, maintain a supportive and non-judgmental tone, and start with a sentence of validation for their feelings."
+                    },
+                    digital: {
+                        cn: "你是一位富有同理心的心理健康顾问，专为顶尖大学的学生提供支持。一名北京大学的学生正被数字压力和社交媒体所困扰，例如错失恐惧（FOMO）和信息过载。请提供三条具体、实用且充满关怀的应对策略，帮助他们建立健康的数字生活习惯。请以数字列表的形式呈现，保持支持和非评判的语气，并以一句共情的话语开头。",
+                        en: "You are a compassionate mental health advisor specializing in student well-being. A student at Peking University is struggling with digital stress and social media, such as Fear of Missing Out (FOMO) and information overload. Provide three practical, empathetic, and actionable coping strategies to help them build healthier digital habits. Please format the response as a numbered list, maintain a supportive and non-judgmental tone, and start with a sentence of validation for their feelings."
+                    }
+                };
+                return prompts[stressor][lang];
+            };
+
+            geminiBtn.addEventListener('click', async () => {
+                const selectedStressor = stressorSelect.value;
+                const prompt = getPrompts(selectedStressor, currentLang);
+                
+                geminiOutput.innerHTML = '';
+                geminiDisclaimer.textContent = '';
+                geminiLoader.classList.remove('hidden');
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        geminiOutput.innerHTML = parseSimpleMarkdown(text);
+                        geminiDisclaimer.textContent = langData[currentLang].gemini_disclaimer;
+                    } else {
+                        throw new Error("Invalid response structure from API.");
+                    }
+
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    geminiOutput.textContent = currentLang === 'cn' ? "抱歉，获取建议时发生错误。请稍后再试。" : "Sorry, an error occurred while fetching suggestions. Please try again later.";
+                } finally {
+                    geminiLoader.classList.add('hidden');
+                }
+            });
+
+
+            updateContent(currentLang);
+        });
+    </script>
+</body>
+</html>
